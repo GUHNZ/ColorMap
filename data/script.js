@@ -96,14 +96,16 @@ function createPickrWrapper(elementId) {
     return wrapper;
 }
 
-// HTML 요소 가져오기
-const countrySelect1 = document.getElementById('country-select-1');
-const countrySelect2 = document.getElementById('country-select-2');
-const countrySelect3 = document.getElementById('country-select-3');
+// 국가/시도 최대 개수
+const MAX_GROUPS = 10;
 
-const highlightColorPicker1 = createPickrWrapper('highlight-color-picker-1');
-const highlightColorPicker2 = createPickrWrapper('highlight-color-picker-2');
-const highlightColorPicker3 = createPickrWrapper('highlight-color-picker-3');
+// HTML 요소 가져오기 (국가)
+const countrySelects = Array.from({ length: MAX_GROUPS }, (_, i) =>
+    document.getElementById(`country-select-${i + 1}`)
+);
+const highlightColorPickers = Array.from({ length: MAX_GROUPS }, (_, i) =>
+    createPickrWrapper(`highlight-color-picker-${i + 1}`)
+);
 
 const borderColorPicker = createPickrWrapper('border-color-picker');
 const disputedColorPicker = createPickrWrapper('disputed-color-picker');
@@ -138,8 +140,9 @@ const styleSelect = document.getElementById('style-select');
 const addCountryButton = document.getElementById('add-country');
 const removeCountryButton = document.getElementById('remove-country');
 
-const countryGroup2 = document.getElementById('country-group-2');
-const countryGroup3 = document.getElementById('country-group-3');
+const countryGroups = Array.from({ length: MAX_GROUPS }, (_, i) =>
+    document.getElementById(`country-group-${i + 1}`)
+);
 
 const landWaterColorGroup = document.getElementById('landwater-color-group');
 
@@ -158,17 +161,18 @@ function getDashLineProperty(chkA, chkB, chkC) {
 const mapZoomSlider = document.getElementById('map-zoom-slider'); // 줌 슬라이더 요소 추가
 
 // 대한민국 시도 관련 HTML 요소 가져오기
-const provinceSelect1 = document.getElementById('province-select-1');
-const provinceSelect2 = document.getElementById('province-select-2');
-const provinceSelect3 = document.getElementById('province-select-3');
-const provinceGroup2 = document.getElementById('province-group-2');
-const provinceGroup3 = document.getElementById('province-group-3');
+const provinceSelects = Array.from({ length: MAX_GROUPS }, (_, i) =>
+    document.getElementById(`province-select-${i + 1}`)
+);
+const provinceGroups = Array.from({ length: MAX_GROUPS }, (_, i) =>
+    document.getElementById(`province-group-${i + 1}`)
+);
 const addProvinceButton = document.getElementById('add-province');
 const removeProvinceButton = document.getElementById('remove-province');
 
-const highlightColorPickerProvince1 = createPickrWrapper('highlight-color-picker-province-1');
-const highlightColorPickerProvince2 = createPickrWrapper('highlight-color-picker-province-2');
-const highlightColorPickerProvince3 = createPickrWrapper('highlight-color-picker-province-3');
+const highlightColorPickersProvince = Array.from({ length: MAX_GROUPS }, (_, i) =>
+    createPickrWrapper(`highlight-color-picker-province-${i + 1}`)
+);
 
 // 탭 관련 요소
 const tabButtons = document.querySelectorAll('.tab-button');
@@ -234,48 +238,38 @@ function populateDatalist(datalistElement, data, type) {
 }
 
 // 각 국가 데이터리스트 채우기
-populateDatalist(document.getElementById('country-datalist-1'), COUNTRIES_DATA, 'country');
-populateDatalist(document.getElementById('country-datalist-2'), COUNTRIES_DATA, 'country');
-populateDatalist(document.getElementById('country-datalist-3'), COUNTRIES_DATA, 'country');
+for (let i = 1; i <= MAX_GROUPS; i++) {
+    populateDatalist(document.getElementById(`country-datalist-${i}`), COUNTRIES_DATA, 'country');
+}
 
 // 대한민국 시도 목록 데이터는 config.js에서 가져옵니다.
 const provinces = PROVINCES_DATA;
 
 // 각 시도 데이터리스트 채우기
-populateDatalist(document.getElementById('province-datalist-1'), PROVINCES_DATA, 'province');
-populateDatalist(document.getElementById('province-datalist-2'), PROVINCES_DATA, 'province');
-populateDatalist(document.getElementById('province-datalist-3'), PROVINCES_DATA, 'province');
+for (let i = 1; i <= MAX_GROUPS; i++) {
+    populateDatalist(document.getElementById(`province-datalist-${i}`), PROVINCES_DATA, 'province');
+}
 
 
-// 초기 선택 국가 설정
-countrySelect1.value = '대한민국';
-countrySelect2.value = ''; // 초기에는 선택되지 않음
-countrySelect3.value = ''; // 초기에는 선택되지 않음
+// 초기 선택 국가 설정 (1번만 대한민국, 나머지는 빈 값)
+countrySelects[0].value = '대한민국';
+for (let i = 1; i < MAX_GROUPS; i++) {
+    countrySelects[i].value = '';
+}
 
 // 동적 국가 그룹 가시성 및 버튼 상태 업데이트 함수
 function updateCountryGroupVisibility() {
-    if (activeCountryGroups < 2) {
-        countryGroup2.classList.add('hidden');
-    } else {
-        countryGroup2.classList.remove('hidden');
+    // 첫 번째 그룹은 항상 보이며, 2번째부터 활성 개수에 따라 토글
+    for (let i = 1; i < MAX_GROUPS; i++) {
+        const isHidden = activeCountryGroups < (i + 1);
+        countryGroups[i].classList.toggle('hidden', isHidden);
+        if (isHidden) {
+            countrySelects[i].value = '';
+        }
     }
 
-    if (activeCountryGroups < 3) {
-        countryGroup3.classList.add('hidden');
-    } else {
-        countryGroup3.classList.remove('hidden');
-    }
-
-    addCountryButton.disabled = (activeCountryGroups >= 3);
+    addCountryButton.disabled = (activeCountryGroups >= MAX_GROUPS);
     removeCountryButton.disabled = (activeCountryGroups <= 1);
-
-    // 국가 그룹이 숨겨질 때 해당 드롭다운 값 초기화
-    if (countryGroup2.classList.contains('hidden')) {
-        countrySelect2.value = '';
-    }
-    if (countryGroup3.classList.contains('hidden')) {
-        countrySelect3.value = '';
-    }
 
     updateMapPaintAndFilter(); // UI 변경 후 지도 업데이트
     if (activeTab === 'country') {
@@ -285,14 +279,16 @@ function updateCountryGroupVisibility() {
 
 // 동적 시도 그룹 가시성 및 버튼 상태 업데이트 함수
 function updateProvinceGroupVisibility() {
-    provinceGroup2.classList.toggle('hidden', activeProvinceGroups < 2);
-    provinceGroup3.classList.toggle('hidden', activeProvinceGroups < 3);
+    for (let i = 1; i < MAX_GROUPS; i++) {
+        const isHidden = activeProvinceGroups < (i + 1);
+        provinceGroups[i].classList.toggle('hidden', isHidden);
+        if (isHidden) {
+            provinceSelects[i].value = '';
+        }
+    }
 
-    addProvinceButton.disabled = (activeProvinceGroups >= 3);
+    addProvinceButton.disabled = (activeProvinceGroups >= MAX_GROUPS);
     removeProvinceButton.disabled = (activeProvinceGroups <= 1);
-
-    if (provinceGroup2.classList.contains('hidden')) provinceSelect2.value = '';
-    if (provinceGroup3.classList.contains('hidden')) provinceSelect3.value = '';
 
     updateMapPaintAndFilter(); // UI 변경 후 지도 업데이트
     if (activeTab === 'province') {
@@ -315,7 +311,7 @@ function getSelectedCountryIso(inputElement) {
 
 // 동적 데이터리스트 업데이트 (국가)
 function updateCountryDatalist() {
-    const allSelects = [countrySelect1, countrySelect2, countrySelect3].filter(el => !el.parentElement.classList.contains('hidden'));
+    const allSelects = countrySelects.filter(el => !el.parentElement.classList.contains('hidden'));
     const selectedNames = allSelects.map(select => select.value).filter(value => value !== '');
 
     allSelects.forEach(selectElement => {
@@ -333,7 +329,7 @@ function updateCountryDatalist() {
 
 // 동적 데이터리스트 업데이트 (시도)
 function updateProvinceDatalist() {
-    const allSelects = [provinceSelect1, provinceSelect2, provinceSelect3].filter(el => !el.parentElement.classList.contains('hidden'));
+    const allSelects = provinceSelects.filter(el => !el.parentElement.classList.contains('hidden'));
     const selectedNames = allSelects.map(select => select.value).filter(value => value !== '');
 
     allSelects.forEach(selectElement => {
@@ -392,10 +388,7 @@ function applyDefaultAlphaByStyle() {
     // '단색' 스타일만 1.0, 나머지는 0.6
     const defaultAlpha = (currentStyle === 'mapbox://styles/designeraj/cmcvnojkj005p01sq5jax8qhf') ? 1.0 : 0.60;
 
-    const fillPickers = [
-        highlightColorPicker1, highlightColorPicker2, highlightColorPicker3,
-        highlightColorPickerProvince1, highlightColorPickerProvince2, highlightColorPickerProvince3
-    ];
+    const fillPickers = [...highlightColorPickers, ...highlightColorPickersProvince];
 
     fillPickers.forEach(wrapper => {
         if (wrapper && wrapper.pickr) {
@@ -506,26 +499,17 @@ function updateMapPaintAndFilter() {
     }
 
     if (activeTab === 'country') {
-        const selectedCountry1 = getSelectedCountryIso(countrySelect1);
-        const selectedCountry2 = getSelectedCountryIso(countrySelect2);
-        const selectedCountry3 = getSelectedCountryIso(countrySelect3);
-
         if (map.getLayer('country-color-fill')) {
             map.setLayoutProperty('country-color-fill', 'visibility', 'visible'); // 다시 보이게
             const paintExpression = ['match', ['get', 'iso_3166_1_alpha_3']];
             currentSelectedCountryIsos = [];
 
-            if (selectedCountry1) {
-                paintExpression.push(selectedCountry1, highlightColorPicker1.value);
-                currentSelectedCountryIsos.push(selectedCountry1);
-            }
-            if (selectedCountry2) {
-                paintExpression.push(selectedCountry2, highlightColorPicker2.value);
-                currentSelectedCountryIsos.push(selectedCountry2);
-            }
-            if (selectedCountry3) {
-                paintExpression.push(selectedCountry3, highlightColorPicker3.value);
-                currentSelectedCountryIsos.push(selectedCountry3);
+            for (let i = 0; i < MAX_GROUPS; i++) {
+                const iso = getSelectedCountryIso(countrySelects[i]);
+                if (iso) {
+                    paintExpression.push(iso, highlightColorPickers[i].value);
+                    currentSelectedCountryIsos.push(iso);
+                }
             }
 
             paintExpression.push('rgba(0, 0, 0, 0)'); // 기본값 (투명)
@@ -589,30 +573,19 @@ function updateMapPaintAndFilter() {
             map.setLayoutProperty('province-color-fill', 'visibility', 'visible');
 
             currentSelectedProvinceCodes = [];
-            const selectedProvince1 = provinceSelect1.value;
-            const selectedProvince2 = provinceSelect2.value;
-            const selectedProvince3 = provinceSelect3.value;
+            const selectedProvinceValues = provinceSelects.map(s => s.value);
 
-            if (selectedProvince1) {
-                currentSelectedProvinceCodes.push(selectedProvince1);
-            }
-            if (selectedProvince2) {
-                currentSelectedProvinceCodes.push(selectedProvince2);
-            }
-            if (selectedProvince3) {
-                currentSelectedProvinceCodes.push(selectedProvince3);
+            for (const v of selectedProvinceValues) {
+                if (v) currentSelectedProvinceCodes.push(v);
             }
 
             if (currentSelectedProvinceCodes.length > 0) {
                 const proPaintExpression = ['match', ['get', 'name']];
-                if (selectedProvince1) {
-                    proPaintExpression.push(selectedProvince1, highlightColorPickerProvince1.value);
-                }
-                if (selectedProvince2) {
-                    proPaintExpression.push(selectedProvince2, highlightColorPickerProvince2.value);
-                }
-                if (selectedProvince3) {
-                    proPaintExpression.push(selectedProvince3, highlightColorPickerProvince3.value);
+                for (let i = 0; i < MAX_GROUPS; i++) {
+                    const v = selectedProvinceValues[i];
+                    if (v) {
+                        proPaintExpression.push(v, highlightColorPickersProvince[i].value);
+                    }
                 }
 
                 proPaintExpression.push('rgba(0, 0, 0, 0)'); // 기본값 (투명)
@@ -885,13 +858,13 @@ map.on('load', function () {
             // 탭 전환 시 데이터 초기화 및 지도 업데이트
             if (activeTab === 'country') {
                 activeProvinceGroups = 1; // 다른 탭의 그룹 수를 1로 초기화
-                provinceSelect1.value = ''; // 시도1 드롭다운 초기화
+                provinceSelects[0].value = ''; // 시도1 드롭다운 초기화
                 updateProvinceGroupVisibility();
                 updateMapPaintAndFilter(); // 국가 탭에 맞게 지도 업데이트
                 flyToSelectedCountries(); // 국가 탭에 맞게 지도 이동
             } else if (activeTab === 'province') {
                 activeCountryGroups = 1; // 다른 탭의 그룹 수를 1로 초기화
-                countrySelect1.value = ''; // 국가1 드롭다운 초기화
+                countrySelects[0].value = ''; // 국가1 드롭다운 초기화
                 updateCountryGroupVisibility();
                 updateMapPaintAndFilter(); // 시도 탭에 맞게 지도 업데이트
                 flyToSelectedProvinces(); // 시도 탭에 맞게 지도 이동
@@ -901,7 +874,7 @@ map.on('load', function () {
 
     // '+' 버튼 클릭 이벤트
     addCountryButton.addEventListener('click', () => {
-        if (activeCountryGroups < 3) {
+        if (activeCountryGroups < MAX_GROUPS) {
             activeCountryGroups++;
             updateCountryGroupVisibility();
         }
@@ -917,7 +890,7 @@ map.on('load', function () {
 
     // 시도 '+' 버튼 클릭 이벤트
     addProvinceButton.addEventListener('click', () => {
-        if (activeProvinceGroups < 3) {
+        if (activeProvinceGroups < MAX_GROUPS) {
             activeProvinceGroups++;
             updateProvinceGroupVisibility();
         }
@@ -932,7 +905,7 @@ map.on('load', function () {
     });
 
     // 국가 입력 필드 이벤트 리스너
-    [countrySelect1, countrySelect2, countrySelect3].forEach(input => {
+    countrySelects.forEach(input => {
         input.addEventListener('focus', updateCountryDatalist);
         input.addEventListener('change', function () {
             // 유효한 국가 이름인지 확인
@@ -947,7 +920,7 @@ map.on('load', function () {
     });
 
     // 시도 입력 필드 이벤트 리스너
-    [provinceSelect1, provinceSelect2, provinceSelect3].forEach(input => {
+    provinceSelects.forEach(input => {
         input.addEventListener('focus', updateProvinceDatalist);
         input.addEventListener('change', function () {
             const isValid = PROVINCES_DATA.some(p => p.name === this.value);
@@ -960,15 +933,9 @@ map.on('load', function () {
         });
     });
 
-    // 국가 강조색 선택기 변경 이벤트
-    highlightColorPicker1.addEventListener('input', updateMapPaintAndFilter);
-    highlightColorPicker2.addEventListener('input', updateMapPaintAndFilter);
-    highlightColorPicker3.addEventListener('input', updateMapPaintAndFilter);
-
-    // 시도 강조색 선택기 변경 이벤트
-    highlightColorPickerProvince1.addEventListener('input', updateMapPaintAndFilter);
-    highlightColorPickerProvince2.addEventListener('input', updateMapPaintAndFilter);
-    highlightColorPickerProvince3.addEventListener('input', updateMapPaintAndFilter);
+    // 국가/시도 강조색 선택기 변경 이벤트
+    highlightColorPickers.forEach(picker => picker.addEventListener('input', updateMapPaintAndFilter));
+    highlightColorPickersProvince.forEach(picker => picker.addEventListener('input', updateMapPaintAndFilter));
 
     // 국경/분쟁/행정 색상 선택기 변경 이벤트
     borderColorPicker.addEventListener('input', updateMapPaintAndFilter);
